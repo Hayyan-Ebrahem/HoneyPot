@@ -49,18 +49,28 @@ class VtechThread(threading.Thread):
         def wrapper(self, *args, **kwargs):
             wrapper.called+=1
             func_occurance = occurance(wrapper.called, self.addr[0])
-            print func_occurance
             occurance_dict.update({occurance.__name__:(func_occurance.occ, func_occurance.ip)})
             return func(self, *args, **kwargs)
         wrapper.called = 0
         return wrapper
 
+    def args_decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            print args
+            file_name=args[0]
+            destination = self.temp_dir if len(args)==1 else args[1]
+            return func(self, file_name, destination)
+        return wrapper
+
+
     def client_connect(self):
         self.servsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.servsock.connect((HOST, PORT))
+        self.servsock.connect((self.host, 1112))
 
     def run(self):
         # Naming the log files
+        self.host = self.addr[0]
         log_file=time.strftime("%Y-%m-%d%H:%M:%S", time.gmtime())
         print "client is : "+self.addr[0]
         # send the default message to the client
@@ -91,8 +101,8 @@ class VtechThread(threading.Thread):
         # will write the data into log files under LOG_DIR
         sniffer = '/usr/bin/tcpflow -i any -C host '+HOST+' > '+HOST+log_file+'&'
         os.system(sniffer)
-        time.sleep(2)
-        self.conn.sendall("connected to  " + HOST+"\n")
+        time.sleep(1)
+        self.conn.sendall("connected to: " + HOST+"\n")
         self.conn.sendall("220 (VSFTPd 3.0.2)"+"\n")
         self.conn.sendall("Name("+HOST+":anonymous): "+"\n")
         try:
@@ -128,6 +138,27 @@ class VtechThread(threading.Thread):
 
     # Starting with the Server commands (functions)
     # each function is the KEY and the Value in 'commands_dict'
+
+    @occurance_decorator
+    @args_decorator
+    def put(self, file_name, destination):
+        """ put  command used to upload files from Client to  server"""
+        if os.path.isdir(destination):
+            # confirm destination to the client
+            self.conn.sendall("YES")
+            self.client_connect()
+            if  '/' in file_name:
+                file_name = file_name[file_name.rfind('/')+1:]
+            data_recieved = open(destination+"/"+file_name,'w+')
+            data=self.servsock.recv(1204)
+            # Start reading and writting data
+            while data:
+                data_recieved.write(data)
+                data = self.servsock.recv(1024)
+            data_recieved.close()
+            self.servsock.close()
+        else:
+            self.conn.sendall(destination+" Does not exist")
 
     def bye(self):
         """
@@ -222,32 +253,6 @@ class VtechThread(threading.Thread):
 
 
 
-    @occurance_decorator
-    def put(self,*args):
-        """ put  command used to upload files from Client to  server"""
-        file_name = args[0]
-        if len(args) == 2:
-            dir=args[1]
-        else:
-            dir=self.temp_dir
-            self.conn.sendall(dir)
-
-        if os.path.isdir(dir):
-            print "file {0} exist".formate(dir)
-            self.conn.sendall("YES")
-            self.client_connect()
-            if  '/' in file_name:
-                file_name = file_name[file_name.rfind('/')+1:]
-            data_recieved = open(dir+"/"+file_name,'w+')
-            data=self.servsock.recv(1204)
-            # Start reading and writting  data
-            while data:
-                data_recieved.write(data)
-                data = self.servsock.recv(1024)
-            data_recieved.close()
-            self.servsock.close()
-        else:
-            self.conn.sendall(dir+" Does not exist")
 
     @occurance_decorator
     def get(self,*args):
