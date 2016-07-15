@@ -4,6 +4,8 @@ import threading
 import sys
 import time
 import subprocess
+from functools import wraps
+from collections import namedtuple
 
 # server static IP
 HOST = '192.168.178.16'
@@ -40,8 +42,16 @@ class VtechThread(threading.Thread):
 
 		threading.Thread.__init__(self)
 
-	def __str__(self):
-		return 'I am STR'
+    def occurance_decorator(func):
+        occ = namedtuple(str(func.__name__), 'occ ip')
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            wrapper.called+=1
+            func_occ = occ(wrapper.called, 1222)
+            print('in wrapper', func_occ)
+            return func(*args, **kwargs)
+        wrapper.called = 0
+    return wrapper
 
 	def client_connect(self):
 		self.servsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -131,13 +141,14 @@ class VtechThread(threading.Thread):
 		occurrance=self.count_dict
 		self.conn.sendall(str(occurrance))
 		self.conn.close()
-
+    @occurance_decorator
 	def pwd(self):
 		'''pwd          print working dir on Vtech server'''
 		self.conn.sendall('257 '+ self.temp_dir+"\n")
 		count_list[0]+=1
 		self.count_dict['pwd'] = count_list[0]
 
+    @occurance_decorator
 	def cd(self,dir):
 		'''cd           change remote working dir'''
 		count_list[1]+=1
@@ -153,6 +164,7 @@ class VtechThread(threading.Thread):
 			self.temp_dir+=dir
 			self.conn.sendall("250 directory successfully changed to "+self.temp_dir+"\n")
 
+    @occurance_decorator
 	def delete(self,data):
 		'''delete       delete remote file and dir '''
 		count_list[2]+=1
@@ -176,6 +188,7 @@ class VtechThread(threading.Thread):
 			self.conn.sendall("ERROR the file "+file_to_delete+" Does not exist on the server\n")
 
 
+    @occurance_decorator
 	def dir(self,*args):
 		'''dir          list contents of remote dir '''
 		count_list[3]+=1
@@ -217,6 +230,7 @@ class VtechThread(threading.Thread):
 
 
 
+    @occurance_decorator
 	def put(self,*args):
 		""" put  command used to upload files from Client to  server"""
 		count_list[6]+=1
@@ -245,6 +259,7 @@ class VtechThread(threading.Thread):
 		else:
 			self.conn.sendall(dir+" Does not exist")
 
+    @occurance_decorator
 	def get(self,*args):
 		""" get  command used to download files from the server to Client """
 		count_list[5]+=1
@@ -286,6 +301,7 @@ class VtechThread(threading.Thread):
 		else:
 			self.conn.sendall("No such file or directory you will be disconnected")
 
+    @occurance_decorator
 	def mkdir(self,data):
 		'''mkdir       make dir on the remote machine'''
 		count_list[7]+=1
@@ -294,6 +310,7 @@ class VtechThread(threading.Thread):
 		os.mkdir(dir)
 		self.conn.sendall('257 directory created'+dir)
 
+    @occurance_decorator
 	def rmdir(self,data):
 		count_list[8]+=1
 		self.count_dict['rmdir'] = count_list[8]
