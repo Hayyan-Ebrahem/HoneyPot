@@ -57,7 +57,6 @@ class VtechThread(threading.Thread):
     def args_decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            print args
             file_name=args[0]
             destination = self.temp_dir if len(args)==1 else args[1]
             return func(self, file_name, destination)
@@ -138,6 +137,49 @@ class VtechThread(threading.Thread):
 
     # Starting with the Server commands (functions)
     # each function is the KEY and the Value in 'commands_dict'
+
+    @occurance_decorator
+    @args_decorator
+    def get(self,file_name, destination):
+        """ get  command used to download files from the server to Client """
+        # file_name = args[0]
+        # if len(args) == 2:
+        #     destination=args[1]
+        # elif len(args) == 1:
+        #     destination=self.conn.recv(1024)
+
+        # override the destination 'Sent from the client'
+        destination=self.conn.recv(1024)
+        name='\033[91m'+file_name+'\033[0m'
+        destination_path='\033[91m'+destination+'\033[0m'
+        file_path=str(os.path.join(self.temp_dir,file_name))
+        if os.path.exists(file_path) and file_name not in self.deleted_items:
+            self.conn.sendall("The file: "+name+" Exist on the server\n")
+            client_response=self.conn.recv(1024)
+            # Check the confermation response from Client
+            if client_response == 'Y':
+                print "file path is :"+file_path
+                self.conn.sendall("remote : "+name+\
+                 "   local : "+destination_path+"\n"
+                +"200 PORT command successful.\r\n"+\
+                "150 Opening BINARY mode data connection for "+\
+                 name+"("+str(os.path.getsize(file_path))+\
+                "bytes)\n 150 Opening data connection .\n")
+                # for the good practice of closing socket , WITH statement was not used
+                data_to_download=open(file_path,'rb')
+                #self.conn.sendall(file_name)
+                data=data_to_download.readline(1024)
+                self.client_connect()
+                while data:
+                    self.servsock.send(data)
+                    data=data_to_download.readline(1024)
+                self.conn.sendall("\n Download Finished \n")
+                data_to_download.close()
+                self.servsock.close()
+            else:
+                self.conn.sendall("Canceling "+file_name+" Downloading")
+        else:
+            self.conn.sendall("No such file or directory you will be disconnected")
 
     @occurance_decorator
     @args_decorator
@@ -250,49 +292,6 @@ class VtechThread(threading.Thread):
         Nmap: off
         Hash mark printing: off; Use of PORT cmds: on
         Tick counter printing: off''')
-
-
-
-
-    @occurance_decorator
-    def get(self,*args):
-        """ get  command used to download files from the server to Client """
-        file_name = args[0]
-        if len(args) == 2:
-            dir=args[1]
-        elif len(args) == 1:
-            dir=self.conn.recv(1024)
-
-        name='\033[91m'+file_name+'\033[0m'
-        dir_path='\033[91m'+dir+'\033[0m'
-        file_path=str(os.path.join(self.temp_dir,file_name))
-        if os.path.exists(file_path) and file_name not in self.deleted_items:
-            self.conn.sendall("The file: "+name+" EXIST on the server")
-            client_response=self.conn.recv(1024)
-            # Check the confermation response from Client
-            if client_response == 'Y':
-                print "file path is :"+file_path
-                self.conn.sendall("remote : "+name+\
-                 "   local : "+dir_path+"\n"
-                +"200 PORT command successful.\r\n"+\
-                "150 Opening BINARY mode data connection for "+\
-                 name+"("+str(os.path.getsize(file_path))+\
-                "bytes)\n 150 Opening data connection .\n")
-                # for the good practice of closing socket , WITH statement was not used
-                data_to_download=open(file_path,'rb')
-                #self.conn.sendall(file_name)
-                data=data_to_download.readline(1024)
-                self.client_connect()
-                while data:
-                    self.servsock.send(data)
-                    data=data_to_download.readline(1024)
-                self.conn.sendall("\n Download Finished \n")
-                data_to_download.close()
-                self.servsock.close()
-            else:
-                self.conn.sendall("Canceling "+file_name+" Downloading")
-        else:
-            self.conn.sendall("No such file or directory you will be disconnected")
 
     @occurance_decorator
     def mkdir(self,data):
