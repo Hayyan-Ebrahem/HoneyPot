@@ -59,6 +59,7 @@ class VtechThread(threading.Thread):
         def wrapper(self, *args, **kwargs):
             file_name=args[0]
             destination = self.temp_dir if len(args)==1 else args[1]
+            print 'destination is '+destination
             return func(self, file_name, destination)
         return wrapper
 
@@ -135,19 +136,13 @@ class VtechThread(threading.Thread):
             print "Error ",e
             self.conn.sendall("Something went wrong ")
 
-    # Starting with the Server commands (functions)
-    # each function is the KEY and the Value in 'commands_dict'
+    # Starting with the Server commands (methods)
+    # each method is the KEY and the Value in 'commands_dict'
 
     @occurance_decorator
     @args_decorator
     def get(self,file_name, destination):
         """ get  command used to download files from the server to Client """
-        # file_name = args[0]
-        # if len(args) == 2:
-        #     destination=args[1]
-        # elif len(args) == 1:
-        #     destination=self.conn.recv(1024)
-
         # override the destination 'Sent from the client'
         destination=self.conn.recv(1024)
         name='\033[91m'+file_name+'\033[0m'
@@ -165,7 +160,6 @@ class VtechThread(threading.Thread):
                 "150 Opening BINARY mode data connection for "+\
                  name+"("+str(os.path.getsize(file_path))+\
                 "bytes)\n 150 Opening data connection .\n")
-                # for the good practice of closing socket , WITH statement was not used
                 data_to_download=open(file_path,'rb')
                 #self.conn.sendall(file_name)
                 data=data_to_download.readline(1024)
@@ -184,7 +178,7 @@ class VtechThread(threading.Thread):
     @occurance_decorator
     @args_decorator
     def put(self, file_name, destination):
-        """ put  command used to upload files from Client to  server"""
+        """ put  command used to upload files from Client to the server"""
         if os.path.isdir(destination):
             # confirm destination to the client
             self.conn.sendall("YES")
@@ -221,31 +215,28 @@ class VtechThread(threading.Thread):
         self.conn.sendall('257 '+ self.temp_dir+"\n")
 
     @occurance_decorator
-    def cd(self,dir):
+    def cd(self,destination):
         '''cd           change remote working dir'''
-        #dir=data
-        if dir.startswith('/'):
-            if os.path.isdir(dir):
-                self.temp_dir = dir
-                self.conn.sendall("250 directory successfuly changed to "+dir+"\n")
+        # absolute path
+        if destination.startswith('/'):
+            if os.path.isdir(destination):
+                self.temp_dir = destination
+                self.conn.sendall("250 directory successfuly changed to "+destination+"\n")
             else:
-                self.conn.sendall(dir+" no such file or dir\n ")
-        elif os.path.isdir(self.temp_dir+"/"+dir):
-            self.temp_dir+=dir
+                self.conn.sendall(destination+" no such file or dir\n ")
+        # Relative path
+        elif os.path.isdir(self.temp_dir+"/"+destination):
+            self.temp_dir+='/'+destination
             self.conn.sendall("250 directory successfully changed to "+self.temp_dir+"\n")
 
     @occurance_decorator
-    def delete(self,data):
+    @args_decorator
+    def delete(self,file_name):
         '''delete       delete remote file and dir '''
         # if client didn't provides a PATH
-        if not '/' in data:
-            file_name = data
-        # get the file name
-        else:
+        if '/' in data:
             file_name = data[data.rfind('/')+1:]
-
         file_to_delete = '\033[91m'+file_name+'\033[0m'
-
         if (os.path.exists(os.path.join(self.temp_dir,file_name)) or os.path\
             .exists(data) ) and file_name not in self.deleted_items:
             self.deleted_items.append(file_name)
@@ -256,20 +247,19 @@ class VtechThread(threading.Thread):
 
 
     @occurance_decorator
-    def dir(self,*args):
-        '''dir          list contents of remote dir '''
-        #  If Client sent a PATH to list
+    def ls(self,*args):
+        '''ls          list contents of remote dir  '''
         if args:
-            dir = args[0]
-            self.list_items(dir)
+            destination = args[0]
         else:
-            self.list_items(self.temp_dir)
+            destination = self.temp_dir
 
-    def list_items(self,*args):
-        dir = args[0]
-        if os.path.isdir(dir):
-            dirs = os.listdir(dir)
-            self.conn.sendall("250 listing files in "+dir+"\n")
+        self.list_items(destination)
+
+    def list_items(self,destination):
+        if os.path.isdir(destination):
+            dirs = os.listdir(destination)
+            self.conn.sendall("250 listing files in "+destination+"\n")
             for files in dirs:
                 if  not ( files.startswith('.') or files in self.deleted_items):
                     if os.path.isdir(self.temp_dir+"/"+files):
@@ -277,7 +267,7 @@ class VtechThread(threading.Thread):
                     else:
                         self.conn.sendall(files+"\n")
         else:
-            self.conn.sendall(dir+" no such file or dir")
+            self.conn.sendall(destination+" no such file or dir")
 
     def status(self):
         '''status       show current status '''
@@ -308,7 +298,7 @@ class VtechThread(threading.Thread):
             self.conn.sendall('250 directory deleted.\r\n')
 
     # this 'commands_dict' values are the server commands to be excuted
-    commands_dict={'pwd':pwd,'cd':cd,'delete':delete,'dir':dir,\
+    commands_dict={'pwd':pwd,'cd':cd,'delete':delete,'ls':ls,\
        'status':status,'get':get,'put':put,'mkdir':mkdir,\
        'rmdir':rmdir,'bye':bye}
     # this 'count_dict' keys are the server comands and the values are number of
