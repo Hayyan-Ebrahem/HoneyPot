@@ -20,11 +20,12 @@ DEFAULT_DIR is the log files folder which will contain two other folders
 code will check and create them
 """
 
-DEFAULT_DIR = '/home/'+sudo_username+'/HP'
+DEFAULT_DIR = '/home/oracle/HP'
 
 if not os.path.exists(DEFAULT_DIR):
-    os.makedirs(DEFAULT_DIR+'/log')
-    os.makedirs(DEFAULT_DIR+'/read_log')
+    print 'created'
+    os.mkdir(DEFAULT_DIR+'/log')
+    os.mkdir(DEFAULT_DIR+'/read_log')
 
 LOG_DIR=DEFAULT_DIR+'/log'
 
@@ -39,7 +40,7 @@ class VtechThread(threading.Thread):
         self.conn=conn
         self.addr=addr
         self.deleted_items=[]
-        self.temp_dir='/home/'+sudo_username
+        self.temp_dir='/home/oracle'
 
         threading.Thread.__init__(self)
 
@@ -129,10 +130,13 @@ class VtechThread(threading.Thread):
                     # if the sent command is in command_dict  take the command
                     # and add () to execute the corresponding method
                     if len(command) == 1:
+                        # ls, pwd, mkdir, rmdir
                         self.commands_dict[command[0]](self)
                     elif len(command) == 2:
+                        # put, get, ls, delete,
                         self.commands_dict[command[0]](self,command[1])
                     elif len(command) == 3:
+                        # put, get
                         self.commands_dict[command[0]](self,command[1],command[2])
                 else:
                     self.conn.sendall(command[0]+" : No such Command")
@@ -142,7 +146,6 @@ class VtechThread(threading.Thread):
             self.conn.sendall("Something went wrong ")
 
     # Starting with the Server commands (methods)
-    # each method is the KEY and the Value in 'commands_dict'
 
     @occurance_decorator
     @args_decorator
@@ -207,7 +210,7 @@ class VtechThread(threading.Thread):
         this dictionary contains the commands and thier occurrance that will be used
         to visualize the data and show simple advices.
 
-        To do this count_dict will be sent via the socket to be captured and written
+        To do this occurrance_dict will be sent via the socket to be captured and written
         in the Server.
 
         """
@@ -310,13 +313,11 @@ class VtechThread(threading.Thread):
             self.conn.sendall('251 directory '+dir_name+ '  does not exist.\r\n')
 
     # this 'commands_dict' values are the server commands to be excuted
-    commands_dict={'pwd':pwd,'cd':cd,'delete':delete,'ls':ls,\
-       'status':status,'get':get,'put':put,'mkdir':mkdir,\
-       'rmdir':rmdir,'bye':bye}
-    # this 'count_dict' keys are the server comands and the values are number of
-    # occurrance of each , this will be used to visualize the commands and its
-    # occurrancein HP.py
-    # count_dict=dict(zip(count_list, commands_dict.values()))
+    commands_dict={
+            'pwd':pwd,'cd':cd,'delete':delete,'ls':ls,
+            'status':status,'get':get,'put':put,'mkdir':mkdir,
+            'rmdir':rmdir,'bye':bye
+            }
 
 class VtechServer(threading.Thread):
     def __init__(self):
