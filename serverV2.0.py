@@ -28,9 +28,9 @@ if not os.path.exists(DEFAULT_DIR):
 
 LOG_DIR=DEFAULT_DIR+'/log'
 
-# list holds the  number of times each function were excuted on the serve
-# this list follows this order count_list[pwd,cd,delete,dir,dir,get,put,mkdir,rmdir]
-# count_list=[0,0,0,0,0,0,0,0,0]
+# this dictoinary will holds the namedtuples for each occurance of method (command) call
+# {'command':(occurance, 'IP')}
+# {'rmdir': (3,  '192.168.178.16'),  'mkdir': (1,  '192.168.178.16'),  'ls': (4,'192.168.178.16'),  'cd': (2,  '192.168.178.16')}
 occurance_dict = {}
 
 class VtechThread(threading.Thread):
@@ -44,10 +44,15 @@ class VtechThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def occurance_decorator(func):
+        '''
+        this decorator will decorate the calls of each command and add the
+        command name and its occurances to the occurance_dict
+        '''
         occurance = namedtuple(str(func.__name__), 'occ ip')
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             wrapper.called+=1
+            # put: (3,  '192.168.178.16')
             func_occurance = occurance(wrapper.called, self.addr[0])
             occurance_dict.update({occurance.__name__:(func_occurance.occ, func_occurance.ip)})
             return func(self, *args, **kwargs)
@@ -61,7 +66,6 @@ class VtechThread(threading.Thread):
             destination = self.temp_dir if len(args)==1 else args[1]
             return func(self, file_name, destination)
         return wrapper
-
 
     def client_connect(self):
         self.servsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -117,11 +121,13 @@ class VtechThread(threading.Thread):
                     if len(command) == 1:
                         # if user send '?' or 'help' the server will send the available commands
                         self.conn.sendall (' '.join(self.commands_dict.keys()))
+                    # asking for particular command help : ? pwd OR help pwd
+                    # the server will send the client the command doc string
                     elif len(command) == 2  and command[1] in self.commands_dict:
                         self.conn.sendall(self.commands_dict[command[1]].func_doc)
                 elif command[0] in self.commands_dict:
-                    # if the command was sent without parameters take the command
-                    # and add () to execute the corresponding function
+                    # if the sent command is in command_dict  take the command
+                    # and add () to execute the corresponding method
                     if len(command) == 1:
                         self.commands_dict[command[0]](self)
                     elif len(command) == 2:
@@ -153,8 +159,8 @@ class VtechThread(threading.Thread):
             # Check the confermation response from Client
             if client_response == 'Y':
                 print "file path is :"+file_path
-                self.conn.sendall("remote : "+name+\
-                 "   local : "+destination_path+"\n"
+                self.conn.sendall("remote: "+name+\
+                 "   local: "+destination_path+"\n"
                 +"200 PORT command successful.\r\n"+\
                 "150 Opening BINARY mode data connection for "+\
                  name+"("+str(os.path.getsize(file_path))+\
@@ -287,7 +293,7 @@ class VtechThread(threading.Thread):
     @args_decorator
     def mkdir(self,file_name, destination):
         '''mkdir       make dir on the remote machine'''
-        dir_name=destination+"/"+file_name
+        dir_name = destination+"/"+file_name
         os.mkdir(dir_name)
         dir_name = '\033[91m'+dir_name+'\033[0m'
         self.conn.sendall('257 directory '+dir_name+' created \r\n')
@@ -321,8 +327,8 @@ class VtechServer(threading.Thread):
     def run(self):
         self.sock.listen(5)
         while True:
-            th=VtechThread(self.sock.accept())
-            th.daemon=True
+            th = VtechThread(self.sock.accept())
+            th.daemon = True
             th.start()
 
     def stop(self):
