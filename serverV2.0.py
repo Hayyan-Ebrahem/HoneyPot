@@ -59,7 +59,6 @@ class VtechThread(threading.Thread):
         def wrapper(self, *args, **kwargs):
             file_name=args[0]
             destination = self.temp_dir if len(args)==1 else args[1]
-            print 'destination is '+destination
             return func(self, file_name, destination)
         return wrapper
 
@@ -233,8 +232,8 @@ class VtechThread(threading.Thread):
     @args_decorator
     def delete(self, file_name, destination):
         '''delete       delete remote file and dir '''
-        print 'destination is'+destination
-        print 'file name is '+file_name
+        # No deletion will be excuted on the server its just addition to
+        # deletion list to not be shown when listing dirctories
         if '/' in file_name:
             file_name = file_name[file_name.rfind('/')+1:]
         file_to_delete = '\033[91m'+file_name+'\033[0m'
@@ -271,7 +270,7 @@ class VtechThread(threading.Thread):
             self.conn.sendall(destination+" no such file or dir")
 
     def status(self):
-        '''status       show current status '''
+        '''status       show current --static-- status '''
         self.conn.sendall("Connected  to "+ HOST+ ''' No proxy connection.
         Connecting using address family: any.
         Mode: stream; Type: binary; Form: non-print; Structure: file
@@ -285,18 +284,24 @@ class VtechThread(threading.Thread):
         Tick counter printing: off''')
 
     @occurance_decorator
-    def mkdir(self,data):
+    @args_decorator
+    def mkdir(self,file_name, destination):
         '''mkdir       make dir on the remote machine'''
-        dir=self.temp_dir+"/"+data
-        os.mkdir(dir)
-        self.conn.sendall('257 directory created'+dir)
+        dir_name=destination+"/"+file_name
+        os.mkdir(dir_name)
+        dir_name = '\033[91m'+dir_name+'\033[0m'
+        self.conn.sendall('257 directory '+dir_name+' created \r\n')
 
     @occurance_decorator
-    def rmdir(self,data):
-        dir = self.temp_dir+"/"+data
-        if os.path.isdir(dir):
-            os.rmdir(dir)
-            self.conn.sendall('250 directory deleted.\r\n')
+    @args_decorator
+    def rmdir(self, file_name, destination):
+        dir_name = destination+"/"+file_name
+        if os.path.isdir(dir_name):
+            os.rmdir(dir_name)
+            dir_name = '\033[91m'+dir_name+'\033[0m'
+            self.conn.sendall('250 directory '+dir_name+ '  deleted.\r\n')
+        else:
+            self.conn.sendall('251 directory '+dir_name+ '  does not exist.\r\n')
 
     # this 'commands_dict' values are the server commands to be excuted
     commands_dict={'pwd':pwd,'cd':cd,'delete':delete,'ls':ls,\
