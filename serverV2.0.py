@@ -231,14 +231,15 @@ class VtechThread(threading.Thread):
 
     @occurance_decorator
     @args_decorator
-    def delete(self,file_name):
+    def delete(self, file_name, destination):
         '''delete       delete remote file and dir '''
-        # if client didn't provides a PATH
-        if '/' in data:
-            file_name = data[data.rfind('/')+1:]
+        print 'destination is'+destination
+        print 'file name is '+file_name
+        if '/' in file_name:
+            file_name = file_name[file_name.rfind('/')+1:]
         file_to_delete = '\033[91m'+file_name+'\033[0m'
         if (os.path.exists(os.path.join(self.temp_dir,file_name)) or os.path\
-            .exists(data) ) and file_name not in self.deleted_items:
+            .exists(destination) ) and file_name not in self.deleted_items:
             self.deleted_items.append(file_name)
             delete_time=time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
             self.conn.sendall('250 the file  '+file_to_delete+' is deleted. on '+delete_time+"\r\n")
