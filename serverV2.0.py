@@ -36,10 +36,10 @@ occurance_dict = {}
 class VtechThread(threading.Thread):
 
     def __init__(self,(conn,addr)):
-        self.conn=conn
-        self.addr=addr
-        self.deleted_items=[]
-        self.temp_dir='/home/oracle'
+        self.conn = conn
+        self.addr = addr
+        self.deleted_items = []
+        self.temp_dir = '/home/oracle'
 
         threading.Thread.__init__(self)
 

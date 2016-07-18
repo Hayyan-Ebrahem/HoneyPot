@@ -1,5 +1,26 @@
 from threading import Thread
-import os,sys,time,socket,commands
+import os
+import sys
+import time
+import socket
+import commands
+
+"""
+    This file will be downloaded and installed on the client side
+    after AGREEING on Vtech ftp server .
+
+    some notes may be usefull:
+
+        STATICS IP's were used
+        STATICS log files and log directory
+        Server system not customized
+
+    This file should implement singleton pattern as it's only allowed to establish
+    one connection from client to the server.
+
+    The following will be excuted when starting 'FTP vtech.com'.
+
+"""
 HOST = '192.168.178.16'
 PORT =1111
 local_dir="/home"
@@ -55,12 +76,8 @@ def list_items(*args):
                     print "\033[94m"+files+"\033[0m"
                 else:
                     print files
-def put(*args):
-    if len(args)==2:
-        file_name=args[0]
-        destination=args[1]
-    elif len(args)==1:
-        file_name=args[0]
+@args_decorator
+def put(file_name, destination):
     if not file_name.startswith('/'):
         file_path=local_dir+"/"+file_name
         print "file to upload is  "+'\033[91m'+file_path+'\033[0m'
@@ -104,21 +121,8 @@ def bye():
     print ans
     s.close()
     print "221 Goodbye \r\n"
+@args_decorator
 def get(*args):
-    if len(args)==2:
-        file_name=args[0]
-        destination=args[1]
-        if not '/' in file_name:
-            file_name=file_name
-        else:
-            file_name=file_name[file_name.rfind('/')+1:]
-    elif len(args)==1:
-        file_name=args[0]
-        if not '/' in file_name:
-            file_name=file_name
-        else:
-            file_name=file_name[file_name.rfind('/')+1]
-        destination=local_dir
     s.send(destination)
     if os.path.isdir(destination):
         print s.recv(1024)
@@ -145,26 +149,13 @@ while True:
     if message in ("bye","quit","exit"):
         bye()
         break
-    else:
+    elif:
         s.send(message)
-        if message[:3]== "lcd":
-            data=message[4:]
-            lcd(data)
-        if message=="lpwd":
-            lpwd()
-        if message[:4]=="ldir":
-            ldir()
-        if message[:3]=="get":
+        if message in ('lcd', 'lpwd', 'ldir'):
+            message()
+        if message in ('put', 'get'):
             data=message.split()
             if len(data)==3:
-                get(data[1],data[2])
+                message(data[1],data[2])
             else:
-                get(data[1])
-
-        if message[:3]=="put":
-        #s.send(message)
-            data=message.split()
-            if len(data)==3:
-                put(data[1],data[2])
-            else:
-                put(data[1])
+                message(data[1])
