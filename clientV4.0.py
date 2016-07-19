@@ -122,7 +122,7 @@ def bye():
     s.close()
     print "221 Goodbye \r\n"
 @args_decorator
-def get(*args):
+def get(file_name, destination):
     s.send(destination)
     if os.path.isdir(destination):
         print s.recv(1024)
