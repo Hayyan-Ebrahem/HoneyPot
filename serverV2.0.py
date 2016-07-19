@@ -8,7 +8,7 @@ from functools import wraps
 from collections import namedtuple
 
 # server static IP
-HOST = '192.168.178.16'
+HOST = '127.0.0.1'
 # server port to open socket connection
 PORT = 1111
 # get the server user name

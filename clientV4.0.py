@@ -21,7 +21,7 @@ import commands
     The following will be excuted when starting 'FTP vtech.com'.
 
 """
-HOST = '192.168.178.16'
+HOST = '127.0.0.1'
 PORT =1111
 local_dir="/home"
 local_host = commands.getoutput("/sbin/ifconfig | grep -E 'addr:192' | awk {'print $2'} | sed -ne 's/addr\:/ /p'")
