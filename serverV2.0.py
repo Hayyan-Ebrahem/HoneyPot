@@ -23,7 +23,6 @@ code will check and create them
 DEFAULT_DIR = '/home/oracle/HP'
 
 if not os.path.exists(DEFAULT_DIR):
-    print 'created'
     os.mkdir(DEFAULT_DIR+'/log')
     os.mkdir(DEFAULT_DIR+'/read_log')
 
@@ -37,10 +36,10 @@ occurance_dict = {}
 class VtechThread(threading.Thread):
 
     def __init__(self,(conn,addr)):
-        self.conn=conn
-        self.addr=addr
-        self.deleted_items=[]
-        self.temp_dir='/home/oracle'
+        self.conn = conn
+        self.addr = addr
+        self.deleted_items = []
+        self.temp_dir = '/home/oracle'
 
         threading.Thread.__init__(self)
 
@@ -61,6 +60,9 @@ class VtechThread(threading.Thread):
         return wrapper
 
     def args_decorator(func):
+        '''
+        this decorator will decorate the arguments  of each command call
+        '''
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             file_name=args[0]
@@ -71,81 +73,6 @@ class VtechThread(threading.Thread):
     def client_connect(self):
         self.servsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.servsock.connect((self.host, 1112))
-
-    def run(self):
-        # Naming the log files
-        self.host = self.addr[0]
-        log_file=time.strftime("%Y-%m-%d%H:%M:%S", time.gmtime())
-        print "client is : "+self.addr[0]
-        # send the default message to the client
-        self.conn.sendall(
-           '''\033[94m
-             This Server system is for authorized users only. Individuals using this
-             system without authority or in excess of their authority are subject to
-             having all their activities on this system monitored and recorded or
-             examined by any authorized person, including law enforcement, as system
-             personnel deem appropriate. In the course of monitoring individuals
-             improperly using the system or in the course of system maintenance, the
-             activities of authorized users may also be monitored and recorded. Any
-             material so recorded may be disclosed as appropriate. Anyone using this
-             system consents to these terms. \n
-             Welcome to\033[0m \033[91mVTech FTP Server \033[0m \n
-             for help type \033[91m?\033[0m and for commands documentation type \033[91m
-             help <<command>> \033[0m \r\n'''
-             )
-        """
-        changing the server current directory to LOG_DIR and start sniffing the network
-        and save the sniffing files.
-
-        """
-        # change directory to where the server will write log files and start
-        # sniffer there
-        os.chdir(LOG_DIR)
-        # sniffer command that will be executed on the server background and
-        # will write the data into log files under LOG_DIR
-        sniffer = '/usr/bin/tcpflow -i any -C host '+HOST+' > '+HOST+log_file+'&'
-        os.system(sniffer)
-        time.sleep(1)
-        self.conn.sendall("connected to: " + HOST+"\n")
-        self.conn.sendall("220 (VSFTPd 3.0.2)"+"\n")
-        self.conn.sendall("Name("+HOST+":anonymous): "+"\n")
-        try:
-            # changing the current directory to default
-            os.chdir(DEFAULT_DIR)
-            while True:
-                self.conn.sendall("\033[94mVTechftp>\033[0m ")
-                data = self.conn.recv(1024)
-                command = data.split()
-                # commands that the server expect when user asking for help
-                # '?' or '? pwd' or 'help' or 'help pwd'
-                if command[0] in ('?', 'help'):
-                    if len(command) == 1:
-                        # if user send '?' or 'help' the server will send the available commands
-                        self.conn.sendall (' '.join(self.commands_dict.keys()))
-                    # asking for particular command help : ? pwd OR help pwd
-                    # the server will send the client the command doc string
-                    elif len(command) == 2  and command[1] in self.commands_dict:
-                        self.conn.sendall(self.commands_dict[command[1]].func_doc)
-                elif command[0] in self.commands_dict:
-                    # if the sent command is in command_dict  take the command
-                    # and add () to execute the corresponding method
-                    if len(command) == 1:
-                        # ls, pwd, mkdir, rmdir
-                        self.commands_dict[command[0]](self)
-                    elif len(command) == 2:
-                        # put, get, ls, delete,
-                        self.commands_dict[command[0]](self,command[1])
-                    elif len(command) == 3:
-                        # put, get
-                        self.commands_dict[command[0]](self,command[1],command[2])
-                else:
-                    self.conn.sendall(command[0]+" : No such Command")
-
-        except Exception, e:
-            print "Error ",e
-            self.conn.sendall("Something went wrong ")
-
-    # Starting with the Server commands (methods)
 
     @occurance_decorator
     @args_decorator
@@ -312,13 +239,82 @@ class VtechThread(threading.Thread):
         else:
             self.conn.sendall('251 directory '+dir_name+ '  does not exist.\r\n')
 
-    # this 'commands_dict' values are the server commands to be excuted
-    commands_dict={
-            'pwd':pwd,'cd':cd,'delete':delete,'ls':ls,
-            'status':status,'get':get,'put':put,'mkdir':mkdir,
-            'rmdir':rmdir,'bye':bye
-            }
+    def run(self):
+        # Naming the log files
+        self.host = self.addr[0]
+        log_file=time.strftime("%Y-%m-%d%H:%M:%S", time.gmtime())
+        print "client is : "+self.addr[0]
+        # send the default message to the client
+        self.conn.sendall(
+           '''\033[94m
+             This Server system is for authorized users only. Individuals using this
+             system without authority or in excess of their authority are subject to
+             having all their activities on this system monitored and recorded or
+             examined by any authorized person, including law enforcement, as system
+             personnel deem appropriate. In the course of monitoring individuals
+             improperly using the system or in the course of system maintenance, the
+             activities of authorized users may also be monitored and recorded. Any
+             material so recorded may be disclosed as appropriate. Anyone using this
+             system consents to these terms. \n
+             Welcome to\033[0m \033[91mVTech FTP Server \033[0m \n
+             for help type \033[91m?\033[0m and for commands documentation type \033[91m
+             help <<command>> \033[0m \r\n'''
+             )
+        """
+        changing the server current directory to LOG_DIR and start sniffing the network
+        and save the sniffing files.
 
+        """
+        # change directory to where the server will write log files and start
+        # sniffer there
+        os.chdir(LOG_DIR)
+        # sniffer command that will be executed on the server background and
+        # will write the data into log files under LOG_DIR
+        sniffer = '/usr/bin/tcpflow -i any -C host '+HOST+' > '+HOST+log_file+'&'
+        os.system(sniffer)
+        time.sleep(1)
+        self.conn.sendall("connected to: " + HOST+"\n")
+        self.conn.sendall("220 (VSFTPd 3.0.2)"+"\n")
+        self.conn.sendall("Name("+HOST+":anonymous): "+"\n")
+        try:
+            # changing the current directory to default
+            os.chdir(DEFAULT_DIR)
+            while True:
+                self.conn.sendall("\033[94mVTechftp>\033[0m ")
+                data = self.conn.recv(1024)
+                command = data.split()
+                # commands that the server expect when user asking for help
+                # '?' or '? pwd' or 'help' or 'help pwd'
+                if command[0] in ('?', 'help'):
+                    if len(command) == 1:
+                        # if user send '?' or 'help' the server will send the available commands
+                        self.conn.sendall (' '.join(self.commands_dict.keys()))
+                    # asking for particular command help : ? pwd OR help pwd
+                    # the server will send the client the command doc string
+                    elif len(command) == 2  and command[1] in self.commands_dict:
+                        self.conn.sendall(self.commands_dict[command[1]].func_doc)
+                elif command[0] in self.commands_dict:
+                    # if the sent command is in command_dict  take the command
+                    # and add () to execute the corresponding method
+                    if len(command) == 1:
+                        # ls, pwd, mkdir, rmdir
+                        self.commands_dict[command[0]](self)
+                    elif len(command) == 2:
+                        # put, get, ls, delete,
+                        self.commands_dict[command[0]](self,command[1])
+                    elif len(command) == 3:
+                        # put, get
+                        self.commands_dict[command[0]](self,command[1],command[2])
+                else:
+                    self.conn.sendall(command[0]+" : No such Command")
+
+        except Exception, e:
+            print "Error ",e
+            self.conn.sendall("Something went wrong ")
+
+        # this 'commands_dict' values are the server commands to be excuted
+    commands_dict = {'pwd':pwd,'cd':cd,'delete':delete,'ls':ls,'status':status,'get':get,'put':put,'mkdir':mkdir,'rmdir':rmdir,'bye':bye}
+# commands_dict = [method for method in dir(VtechThread) if callable(getattr(VtechThread, method)) and not method.startswith('_')]
 class VtechServer(threading.Thread):
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
