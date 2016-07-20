@@ -185,7 +185,6 @@ class VtechThread(threading.Thread):
     @occurance_decorator
     def ls(self, *args):
         '''ls          list contents of remote dir  '''
-        print args[0]
         if args:
             destination = args[0]
         else:
@@ -231,9 +230,9 @@ class VtechThread(threading.Thread):
 
     def help(self, *args):
         if args:
-            self.conn.sendall(self.commands_dict[args[1]].func_doc)
+            self.conn.sendall(self.commands_dict[args[0]].func_doc+'\r\n')
         else:
-            self.conn.sendall (' '.join(self.commands_dict.keys()))
+            self.conn.sendall (' '.join(self.commands_dict.keys())+'\r\n')
 
 
 
