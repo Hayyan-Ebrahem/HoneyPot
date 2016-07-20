@@ -293,34 +293,12 @@ class VtechThread(threading.Thread):
                 command = data.split()
                 if self.commands_dict.get(command[0]):
                     self.commands_dict[command[0]](self, *command[1:])
-                # commands that the server expect when user asking for help
-                # '?' or '? pwd' or 'help' or 'help pwd'
-                # if command[0] in ('?', 'help'):
-                #     if len(command) == 1:
-                #         # if user send '?' or 'help' the server will send the available commands
-                #         self.conn.sendall (' '.join(self.commands_dict.keys()))
-                #     # asking for particular command help : ? pwd OR help pwd
-                #     # the server will send the client the command doc string
-                #     elif len(command) == 2  and command[1] in self.commands_dict:
-                #         self.conn.sendall(self.commands_dict[command[1]].func_doc)
-                # elif command[0] in self.commands_dict:
-                #     # if the sent command is in command_dict  take the command
-                #     # and add () to execute the corresponding method
-                #     if len(command) == 1:
-                #         # ls, pwd, mkdir, rmdir
-                #         self.commands_dict[command[0]](self)
-                #     elif len(command) == 2:
-                #         # put, get, ls, delete,
-                #         self.commands_dict[command[0]](self,command[1])
-                #     elif len(command) == 3:
-                #         # put, get
-                #         self.commands_dict[command[0]](self,command[1],command[2])
-                # else:
-                #     self.conn.sendall(command[0]+" : No such Command")
+                else:
+                    self.conn.sendall(command[0]+" : No such Command\r\n")
 
         except Exception, e:
             print "Error ",e
-            self.conn.sendall("Something went wrong ")
+            self.conn.sendall("Something went wrong\r\n ")
 
         # this 'commands_dict' values are the server commands to be excuted
     commands_dict = {'help':help, 'pwd':pwd, 'cd':cd, 'delete':delete, 'ls':ls, 'status':status, 'get':get, 'put':put, 'mkdir':mkdir, 'rmdir':rmdir, 'bye':bye}
