@@ -183,7 +183,7 @@ class VtechThread(threading.Thread):
 
 
     @occurance_decorator
-    def ls(self,*args):
+    def ls(self, *args):
         '''ls          list contents of remote dir  '''
         if args:
             destination = args[0]
@@ -192,7 +192,7 @@ class VtechThread(threading.Thread):
 
         self.list_items(destination)
 
-    def list_items(self,destination):
+    def list_items(self, destination):
         if os.path.isdir(destination):
             dirs = os.listdir(destination)
             self.conn.sendall("250 listing files in "+destination+"\n")
@@ -217,7 +217,7 @@ class VtechThread(threading.Thread):
         Ntrans: off
         Nmap: off
         Hash mark printing: off; Use of PORT cmds: on
-        Tick counter printing: off''')
+        Tick counter printing: off\r\n''')
 
     @occurance_decorator
     @args_decorator
@@ -227,6 +227,14 @@ class VtechThread(threading.Thread):
         os.mkdir(dir_name)
         dir_name = '\033[91m'+dir_name+'\033[0m'
         self.conn.sendall('257 directory '+dir_name+' created \r\n')
+
+    def help(self, *args):
+        if args:
+            self.conn.sendall(self.commands_dict[args[0]].func_doc+'\r\n')
+        else:
+            self.conn.sendall (' '.join(self.commands_dict.keys())+'\r\n')
+
+
 
     @occurance_decorator
     @args_decorator
@@ -283,37 +291,39 @@ class VtechThread(threading.Thread):
                 self.conn.sendall("\033[94mVTechftp>\033[0m ")
                 data = self.conn.recv(1024)
                 command = data.split()
+                if self.commands_dict.get(command[0]):
+                    self.commands_dict[command[0]](self, *command[1:])
                 # commands that the server expect when user asking for help
                 # '?' or '? pwd' or 'help' or 'help pwd'
-                if command[0] in ('?', 'help'):
-                    if len(command) == 1:
-                        # if user send '?' or 'help' the server will send the available commands
-                        self.conn.sendall (' '.join(self.commands_dict.keys()))
-                    # asking for particular command help : ? pwd OR help pwd
-                    # the server will send the client the command doc string
-                    elif len(command) == 2  and command[1] in self.commands_dict:
-                        self.conn.sendall(self.commands_dict[command[1]].func_doc)
-                elif command[0] in self.commands_dict:
-                    # if the sent command is in command_dict  take the command
-                    # and add () to execute the corresponding method
-                    if len(command) == 1:
-                        # ls, pwd, mkdir, rmdir
-                        self.commands_dict[command[0]](self)
-                    elif len(command) == 2:
-                        # put, get, ls, delete,
-                        self.commands_dict[command[0]](self,command[1])
-                    elif len(command) == 3:
-                        # put, get
-                        self.commands_dict[command[0]](self,command[1],command[2])
-                else:
-                    self.conn.sendall(command[0]+" : No such Command")
+                # if command[0] in ('?', 'help'):
+                #     if len(command) == 1:
+                #         # if user send '?' or 'help' the server will send the available commands
+                #         self.conn.sendall (' '.join(self.commands_dict.keys()))
+                #     # asking for particular command help : ? pwd OR help pwd
+                #     # the server will send the client the command doc string
+                #     elif len(command) == 2  and command[1] in self.commands_dict:
+                #         self.conn.sendall(self.commands_dict[command[1]].func_doc)
+                # elif command[0] in self.commands_dict:
+                #     # if the sent command is in command_dict  take the command
+                #     # and add () to execute the corresponding method
+                #     if len(command) == 1:
+                #         # ls, pwd, mkdir, rmdir
+                #         self.commands_dict[command[0]](self)
+                #     elif len(command) == 2:
+                #         # put, get, ls, delete,
+                #         self.commands_dict[command[0]](self,command[1])
+                #     elif len(command) == 3:
+                #         # put, get
+                #         self.commands_dict[command[0]](self,command[1],command[2])
+                # else:
+                #     self.conn.sendall(command[0]+" : No such Command")
 
         except Exception, e:
             print "Error ",e
             self.conn.sendall("Something went wrong ")
 
         # this 'commands_dict' values are the server commands to be excuted
-    commands_dict = {'pwd':pwd,'cd':cd,'delete':delete,'ls':ls,'status':status,'get':get,'put':put,'mkdir':mkdir,'rmdir':rmdir,'bye':bye}
+    commands_dict = {'help':help, 'pwd':pwd, 'cd':cd, 'delete':delete, 'ls':ls, 'status':status, 'get':get, 'put':put, 'mkdir':mkdir, 'rmdir':rmdir, 'bye':bye}
 # commands_dict = [method for method in dir(VtechThread) if callable(getattr(VtechThread, method)) and not method.startswith('_')]
 class VtechServer(threading.Thread):
     def __init__(self):
