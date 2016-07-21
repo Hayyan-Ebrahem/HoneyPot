@@ -43,16 +43,16 @@ class get_text(object):
     def open_file(self,*args):
         redir = RedirectText(args[0])
         sys.stdout = redir
-        f=open(log_dir+"/"+args[1])
+        with open(log_dir+"/"+args[1]) as f:
+            sys.stdout=sys.stdout
+            lines=f.readlines()
+            indices = [i for i, x in enumerate(lines) if "[94mVTechftp>[0m" in x ]
         #iter_file=iter(f)
-        readable=open(readable_log+"/"+args[1],'w+')
-        readable.write("Client is :"+args[1][:15]+"\n\n")
-        sys.stdout=sys.stdout
-        lines=f.readlines()
-        indices = [i for i, x in enumerate(lines) if "[94mVTechftp>[0m" in x ]
-        for j in indices:
-            readable.write("Client send : "+lines[j+1])
-            readable.write("Server replys : "+lines[j+3]+"\r\n")
+            with open(readable_log+"/"+args[1],'w+') as readable:
+                readable.write("Client is :"+args[1][:15]+"\n\n")
+                for j in indices:
+                    readable.write("Client send : "+lines[j+1])
+                    readable.write("Server replys : "+lines[j+3]+"\r\n")
         try:
             for line in lines:
                 if "{" in line:
