@@ -29,8 +29,8 @@ if not os.path.exists(DEFAULT_DIR):
 LOG_DIR=DEFAULT_DIR+'/log'
 
 # this dictoinary will holds the namedtuples for each occurance of method (command) call
-# {'command':(occurance, 'IP')}
-# {'rmdir': (3,  '192.168.178.16'),  'mkdir': (1,  '192.168.178.16'),  'ls': (4,'192.168.178.16'),  'cd': (2,  '192.168.178.16')}
+# {'command':(occurance, 'timestamp')}
+# {'rmdir': (3,  '1469142491.401199'),  'mkdir': (1,  '1469142497.901392'), 'ls': (4,'14646782491.131199')}
 occurance_dict = {}
 
 class VtechThread(threading.Thread):
@@ -53,7 +53,7 @@ class VtechThread(threading.Thread):
         def wrapper(self, *args, **kwargs):
             wrapper.called+=1
             # put: (3,  '192.168.178.16')
-            func_occurance = occurance(wrapper.called, self.addr[0])
+            func_occurance = occurance(wrapper.called, time.time())
             occurance_dict.update({occurance.__name__:(func_occurance.occ, func_occurance.ip)})
             return func(self, *args, **kwargs)
         wrapper.called = 0
