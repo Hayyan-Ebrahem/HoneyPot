@@ -42,11 +42,12 @@ class get_text(object):
     def open_file(self,*args):
         redir = RedirectText(args[0])
         sys.stdout = redir
-        with open(log_dir+"/"+args[1]) as f:
+        with open(log_dir+"/"+args[1]) as log:
             sys.stdout=sys.stdout
-            lines=f.readlines()
+            lines=log.readlines()
             indices = [i for i, x in enumerate(lines) if "[94mVTechftp>[0m" in x ]
-        #iter_file=iter(f)
+            # readable file is the readable session log(request <---> response) which is created when reading the
+            # log files from 'log'
             with open(readable_log+"/"+args[1],'w+') as readable:
                 readable.write("Client is :"+args[1][:15]+"\n\n")
                 for j in indices:
@@ -54,8 +55,8 @@ class get_text(object):
                     # lines[j+3]  ==> the response from the server -indexed as
                     # i+3 because the new line after each command sent to the
                     # server
-                    readable.write("Client send : "+lines[j+1])
-                    readable.write("Server replys : "+lines[j+3]+"\r\n")
+                    readable.write("Client requests : "+lines[j+1])
+                    readable.write("Server responses : "+lines[j+3]+"\r\n")
         try:
             for line in lines:
                 if "{" in line:

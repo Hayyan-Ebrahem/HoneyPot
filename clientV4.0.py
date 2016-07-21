@@ -109,7 +109,7 @@ def put(file_name, destination):
                 data_to_upload.close()
                 co.close()
         else:
-            print 'nop'
+            print 'canceling ...'
             s.close()
     else:
         print ("file "+name+" not found")
@@ -118,9 +118,11 @@ def put(file_name, destination):
 def bye():
     que=s.sendall("bye")
     ans=s.recv(1024)
-    print ans
+    # for debugging uncomment next line
+    # print ans
     s.close()
     print "221 Goodbye \r\n"
+
 @args_decorator
 def get(file_name, destination):
     s.send(destination)
