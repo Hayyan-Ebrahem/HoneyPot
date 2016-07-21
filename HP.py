@@ -49,10 +49,10 @@ class get_text(object):
         readable.write("Client is :"+args[1][:15]+"\n\n")
         sys.stdout=sys.stdout
         lines=f.readlines()
-        indices = [i for i, x in enumerate(lines) if ".[94mVTechftp>.[0m" in x ]
+        indices = [i for i, x in enumerate(lines) if "[94mVTechftp>[0m" in x ]
         for j in indices:
             readable.write("Client send : "+lines[j+1])
-            readable.write("Server replys : "+lines[j+2]+"\r\n")
+            readable.write("Server replys : "+lines[j+3]+"\r\n")
         try:
             for line in lines:
                 if "{" in line:
