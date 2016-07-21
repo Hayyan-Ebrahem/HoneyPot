@@ -48,13 +48,13 @@ class VtechThread(threading.Thread):
         this decorator will decorate the calls of each command and add the
         command name and its occurances to the occurance_dict
         '''
-        occurance = namedtuple(str(func.__name__), 'occ ip')
+        occurance = namedtuple(str(func.__name__), 'occ timestamp')
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             wrapper.called+=1
-            # put: (3,  '192.168.178.16')
+            # put: (3,  '1469142491.938432')
             func_occurance = occurance(wrapper.called, time.time())
-            occurance_dict.update({occurance.__name__:(func_occurance.occ, func_occurance.ip)})
+            occurance_dict.update({occurance.__name__:(func_occurance.occ, func_occurance.timestamp)})
             return func(self, *args, **kwargs)
         wrapper.called = 0
         return wrapper
