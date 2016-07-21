@@ -7,7 +7,6 @@ import os
 import matplotlib.pyplot as pyplot
 import ast
 import operator
-import ast
 """
 this file will read the log files and open a tkinter window with tabs named as the log files
 '192.168.178.162016-06-1815:38:44' and start typing out the file contents
@@ -51,6 +50,10 @@ class get_text(object):
             with open(readable_log+"/"+args[1],'w+') as readable:
                 readable.write("Client is :"+args[1][:15]+"\n\n")
                 for j in indices:
+                    # lines[j+1]  ==> the sent command from client to server
+                    # lines[j+3]  ==> the response from the server -indexed as
+                    # i+3 because the new line after each command sent to the
+                    # server
                     readable.write("Client send : "+lines[j+1])
                     readable.write("Server replys : "+lines[j+3]+"\r\n")
         try:
