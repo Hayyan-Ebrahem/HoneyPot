@@ -69,8 +69,6 @@ class get_text(object):
                  #       raise StopIteration()
         except StopIteration:
             pass
-        f.close()
-        readable.close()
 #       try:
 #           # mutt should be set up on the Server to send emails
 #           os.system('mutt -s "Message from VtechServer" hayyan-ebrahem@hotmail.com < /home/oracle/HP/log/'+args[1])
